@@ -1,1 +1,1 @@
-c:\Users\Administrator\Downloads\pscp.exe -r C:\Workspace\horse\avalokitesvara\meetingFile\target\meetingFile-0.1.war nestle1998@boshim.com:/home/nestle1998/uploads/meetingFile.war
+C:\Users\pscp.exe -r .\target\meetingFile-0.1.war nestle1998@boshim.com:/home/nestle1998/uploads/meetingFile.war

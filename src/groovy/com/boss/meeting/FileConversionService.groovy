@@ -133,25 +133,61 @@ public class FileConversionService {
 
     public UploadedDocument convertOfficeToPdf(UploadedDocument file)
     {
-        File output = setupOutputPdfFile(file);
-        PageConverter converter = new Office2PdfPageConverter();
-        if(converter.convert(file.getUploadedFile(), output, 0))
-        {
-            file.renameToUploadDir(); // 将原始文件重命名为upload根目录下的md5文件，作为原始文件记录
-            file.setUploadedFile(output); // 将转换后的PDF设置为新的需要转换的文件
-            file.setFileType("pdf");
+        String COMMAND = String.format(grailsApplication.config.docConvertCommand, file.uploadedFile.getAbsolutePath(), grailsApplication.config.fileUploadRootDir);
+
+        Process proc = null;
+        StreamGobbler outputGobbler = null;
+        StreamGobbler errorGobbler = null;
+
+        try {
+            logger.debug("docConvertCommand cmd is " + COMMAND);
+            proc = Runtime.getRuntime().exec(COMMAND);
+            errorGobbler = new StreamGobbler(proc.getErrorStream(), "ERROR");
+            outputGobbler = new StreamGobbler(proc.getInputStream(), "Output");
+
+            errorGobbler.start();
+            outputGobbler.start();
+
+            int exitVal = proc.waitFor();
+            logger.info("TIMEDOUT excuting : " + exitVal);
+        } catch(Exception e) {
+            logger.info("TIMEDOUT excuting : " + COMMAND + ", exception message is " + e.getMessage());
+            proc.destroy();
+        } finally {
+            if(outputGobbler != null) {
+                outputGobbler.join();
+
+                File output = setupOutputPdfFile(file);
+
+                file.renameToUploadDir(); // 将原始文件重命名为upload根目录下的md5文件，作为原始文件记录
+                file.setUploadedFile(output); // 将转换后的PDF设置为新的需要转换的文件
+                file.setFileType("pdf");
+
+                logger.info("excuting finished, cmd is " + COMMAND + "${output.getAbsolutePath()}");
+            }
         }
-        else
-        {
-            logger.error("failed to convert the file to pdf.");
-        }
+
+//        File output = setupOutputPdfFile(file);
+//        PageConverter converter = new Office2PdfPageConverter();
+//        if(converter.convert(file.getUploadedFile(), output, 0))
+//        {
+//            file.renameToUploadDir(); // 将原始文件重命名为upload根目录下的md5文件，作为原始文件记录
+//            file.setUploadedFile(output); // 将转换后的PDF设置为新的需要转换的文件
+//            file.setFileType("pdf");
+//        }
+//        else
+//        {
+//            logger.error("failed to convert the file to pdf.");
+//        }
         return file;
     }
 
     private File setupOutputPdfFile(UploadedDocument file)
     {
         File orgFile = file.getUploadedFile();
-        String pdfFileName = orgFile.getAbsolutePath() + ".pdf";
+
+        String orgFileName = orgFile.getAbsolutePath()
+        String pdfFileName = orgFileName.substring(0, orgFileName.length() - file.getFileType().length()) + "pdf";
         return new File(pdfFileName);
     }
 

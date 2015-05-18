@@ -208,9 +208,10 @@ class ElfinderLocalFileSystemFileManager implements ElFinderFileManager {
 	}
 
 	Map uploadFile(CommonsMultipartFile multiPartFile, String targetDir) {
-		logger.debug("uploadFile targetDir $targetDir")
 		String name = multiPartFile.getOriginalFilename()
 		String directory = toFile(targetDir)
+
+		logger.debug("uploadFile targetDir $targetDir, name is $name, directory is $directory")
 
 		File f = new File(directory, name)
 		boolean success = f.createNewFile()
@@ -220,6 +221,8 @@ class ElfinderLocalFileSystemFileManager implements ElFinderFileManager {
 
 			String md5 = generateMD5(f)
 
+			logger.debug("this file's md5 is ${md5}");
+
 			File md5File = new File(directory + File.separatorChar +md5);
 			if(md5File.exists()) {
 				f.delete();
@@ -228,18 +231,16 @@ class ElfinderLocalFileSystemFileManager implements ElFinderFileManager {
 				def fileType = ""
 				int extPos = name.lastIndexOf(".")
 
-				if(extPos != -1)
-				{
+				if(extPos != -1) {
 					fileType = name.toLowerCase().substring(extPos+1)// 不存在则解析文件类型
 				}
-				if(fileType != "" && SupportedFileTypes.isFileSupported(fileType))
-				{
+				if(fileType != "" && SupportedFileTypes.isFileSupported(fileType)) {
 					def renamedFile = new File(f.parent + File.separatorChar + md5 + "." + fileType);
 					if(renamedFile.exists()) {
 						renamedFile.delete();
 					}
-					if(f.renameTo(renamedFile))
-					{
+
+					if(f.renameTo(renamedFile)) {
 						logger.debug("rename upload file ok, begin to convert, fileService is null? ${fileService == null}")
 
 						UploadedDocument doc = new UploadedDocument(name, md5, fileType, renamedFile, "");
@@ -250,8 +251,12 @@ class ElfinderLocalFileSystemFileManager implements ElFinderFileManager {
 					f.renameTo(md5File);
 				}
 			}
+
 			result.md5 = md5;
 			return result
+		}
+		else {
+			logger.debug("create file failed........................")
 		}
 		return null
 	}
