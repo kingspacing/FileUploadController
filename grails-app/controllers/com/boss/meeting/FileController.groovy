@@ -43,12 +43,12 @@ class FileController {
         def file = params.Filedata;
         if(file && !file.empty) {
             // 保存文件
-            File tmpDir = new File(grailsApplication.config.getProperty("fileUploadTmpDir").toString());
+//            File tmpDir = new File(grailsApplication.config.getProperty("fileUploadTmpDir").toString());
             File uploadDir = new File(grailsApplication.config.getProperty("fileUploadRootDir").toString());
 
-            if (!tmpDir.exists()) {
-                tmpDir.mkdirs();
-            }
+//            if (!tmpDir.exists()) {
+//                tmpDir.mkdirs();
+//            }
 
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
@@ -56,7 +56,7 @@ class FileController {
 
             def fileName = file.getOriginalFilename()
             logger.debug("the file name is ${fileName}")
-            def savingFile = new File( tmpDir.absolutePath + File.separatorChar + fileName )
+            def savingFile = new File( uploadDir.absolutePath + File.separatorChar + fileName )
             file.transferTo(savingFile)
             logger.debug("the file path is ${savingFile.absolutePath}")
 
