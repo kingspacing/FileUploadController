@@ -9,7 +9,12 @@ class FileService {
         // Run conversion on another thread.
         new Timer().runAfter(100) {
             FileConversionService fileConversionService = new FileConversionService(redisService);
-            fileConversionService.processFile(uploadedFile)
+            fileConversionService.processFile(uploadedFile, false)
         }
+    }
+
+    def syncProcessUploadFile(uploadedFile) {
+        FileConversionService fileConversionService = new FileConversionService(redisService);
+        fileConversionService.processFile(uploadedFile, true)
     }
 }

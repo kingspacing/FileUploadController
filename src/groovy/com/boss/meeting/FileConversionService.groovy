@@ -28,37 +28,36 @@ public class FileConversionService {
         this.redisService = redisService;
     }
 
-    public void processFile(UploadedDocument file)
+    public int processFile(UploadedDocument file, Boolean isSync)
     {
         logger.debug("processFile document name is " + file.getUploadedFile().getAbsolutePath());
-        if (SupportedFileTypes.isOfficeFile(file.getFileType()))
-        {
+        if (SupportedFileTypes.isOfficeFile(file.getFileType())) {
             convertOfficeToPdf(file); // 将word文档转换为pdf,并重命名原始文件
-            convertPdf2Images(file); // 将pdf转换为image
+            convertPdf2Images(file, isSync); // 将pdf转换为image
             file.getUploadedFile().delete();// 删除中间pdf文件
+            return file.numberOfPages;
         }
-        else if (SupportedFileTypes.isPdfFile(file.getFileType()))
-        {
-            convertPdf2Images(file);
+        else if (SupportedFileTypes.isPdfFile(file.getFileType())) {
+            convertPdf2Images(file, isSync);
             file.renameToUploadDir(); // 将原始的pdf文件重命名为md5保存
+            return file.numberOfPages;
         }
-        else if (SupportedFileTypes.isImageFile(file.getFileType()))
-        {
+        else if (SupportedFileTypes.isImageFile(file.getFileType())) {
             file.renameToUploadDir(); // 保存原始文件
+            // 图片同意
+            return 1;
         }
-        else
-        {
+        else {
             logger.error("unsupport file tye, file type is " + file.getFileType());
         }
     }
 
-    public UploadedDocument convertPdf2Images(UploadedDocument document)
+    public UploadedDocument convertPdf2Images(UploadedDocument document, Boolean isSync)
     {
-        determineNumberOfPages(document);
+        determineNumberOfPages(document, isSync);
         Process p = null;
 
-        if(document.getNumberOfPages() > 0)
-        {
+        if(document.getNumberOfPages() > 0) {
             // 创建存储目录，开始转换为图片
             File destDir = new File(grailsApplication.getConfig().getProperty("fileUploadImageDir") + File.separatorChar + document.getMD5());
 
@@ -88,7 +87,7 @@ public class FileConversionService {
         return document;
     }
 
-    private void determineNumberOfPages(UploadedDocument document)
+    private void determineNumberOfPages(UploadedDocument document, Boolean isSync)
     {
         File destDir = new File(grailsApplication.config.fileUploadImageDir + File.separatorChar + document.getMD5() + File.separatorChar + grailsApplication.config.fileUploadThumbnailDir);
         if (!destDir.exists()) {
@@ -118,15 +117,23 @@ public class FileConversionService {
         } finally {
             if(outputGobbler != null) {
                 outputGobbler.join();
-                def message = ["md5":document.getMD5(),
-                               "size":document.getUploadedFile().size(),
-                               "pages":outputGobbler.numPages];
-                redisService.withRedis { Jedis redis ->
-                    redis.publish("bm:file:update", (message as JSON).toString());
+
+                if(!isSync) {
+                    // 异步模式需要通知
+                    def message = ["md5":document.getMD5(),
+                                   "size":document.getUploadedFile().size(),
+                                   "pages":outputGobbler.numPages];
+                    redisService.withRedis { Jedis redis ->
+                        redis.publish("bm:file:update", (message as JSON).toString());
+                    }
+                    logger.info("excuting finished, cmd is " + COMMAND + ", pages is " + document.getNumberOfPages() +
+                            ", outputGobbler.numPages is " + outputGobbler.numPages + ", message is " +  (message as JSON).toString());
+                }
+                else {
+                    logger.info("excuting finished, cmd is " + COMMAND + ", pages is " + document.getNumberOfPages() +
+                            ", outputGobbler.numPages is " + outputGobbler.numPages);
                 }
                 document.setNumberOfPages(outputGobbler.numPages);
-                logger.info("excuting finished, cmd is " + COMMAND + ", pages is " + document.getNumberOfPages() +
-                        ", outputGobbler.numPages is " + outputGobbler.numPages + ", message is " +  (message as JSON).toString());
             }
         }
     }

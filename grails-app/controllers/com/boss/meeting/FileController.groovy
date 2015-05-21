@@ -104,10 +104,12 @@ class FileController {
 
                     if(savingFile.renameTo(renamedFile))
                     {
-                        logger.debug("rename upload file ok, begin to convert.")
-
                         UploadedDocument doc = new UploadedDocument(fileName, md5, fileType, renamedFile, "");
-                        fileService.processUploadedFile(doc);
+//                        fileService.processUploadedFile(doc);
+                        int pages= fileService.syncProcessUploadFile(doc);
+
+                        message.pages = pages;
+                        logger.debug("rename upload file ok, begin to convert, pages is ${pages}, message is ${message}.");
                     };
                     // 转换完成时自动重命名，所以与无需命名，
                 }
@@ -124,7 +126,7 @@ class FileController {
             render message as JSON
         }
         else {
-            logger.debug("cann't find file .............")
+            logger.debug("cann't find file, filedata is null ? ${params.Filedata == null}.............")
             render "0"
         }
     }
@@ -293,6 +295,9 @@ class FileController {
                         hFile.close();
                     }
                 }
+            }
+            else {
+                logger.debug("redis uuid ${index} don't exist!");
             }
         }
     }
