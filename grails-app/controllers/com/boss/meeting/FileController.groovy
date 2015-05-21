@@ -119,10 +119,11 @@ class FileController {
                 }
             }
 
-            redisService.withRedis { Jedis redis ->
-                redis.publish("bm:file:add", (message as JSON).toString());
-            }
+//            redisService.withRedis { Jedis redis ->
+//                redis.publish("bm:file:add", (message as JSON).toString());
+//            }
 
+            logger.debug("the add file render result is ${message}")
             render message as JSON
         }
         else {
