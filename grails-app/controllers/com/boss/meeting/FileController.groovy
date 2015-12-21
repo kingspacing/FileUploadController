@@ -196,7 +196,7 @@ class FileController {
 //
 //            // 获取文件的md5值
 //            String md5 = generateMD5(savingFile)
-//
+//\
 //            // 检查文件是否已经存在
 //            def md5File = new File(uploadDir.absolutePath + File.separatorChar +md5);
 //

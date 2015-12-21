@@ -126,6 +126,17 @@ log4j = {
            'net.sf.ehcache.hibernate'
 }
 
+oauth {
+    providers {
+        twitter {
+            api = TwitterApi
+            key = 'my-key'
+            secret = 'my-secret'
+            callback = "${application.baseUrl}/oauth/twitter/callback"
+        }
+    }
+}
+
 //grails {
 //    redis {
 ////        poolConfig {
